@@ -41,7 +41,7 @@ func NewClient(serverIP string, serverPort int) *Client {
 // DealResponse 处理server回应的消息，直接显示到标准输出
 func (c *Client) DealResponse() {
 	// 一旦c.conn有数据，就直接拷贝到stout标准输出中，永久阻塞监听
-	io.Copy(os.Stdout, c.conn)
+	_, _ = io.Copy(os.Stdout, c.conn)
 }
 
 // menu 模式菜单
