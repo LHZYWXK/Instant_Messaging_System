@@ -15,23 +15,23 @@ type Server struct {
 
 	// 在线用户的列表
 	OnlineMap map[string]*User
-	maplock   sync.RWMutex
+	capslock  sync.RWMutex
 
 	// 消息广播的channel
 	Message chan string
 }
 
-// ListenMessager 监听Message广播消息channel的goroutine，一旦有消息就发送给全部的在线User
-func (s *Server) ListenMessager() {
+// ListenMessaged 监听Message广播消息channel的goroutine，一旦有消息就发送给全部的在线User
+func (s *Server) ListenMessaged() {
 	for {
 		msg := <-s.Message
 
 		// 将msg发送给全部的在线User
-		s.maplock.Lock()
+		s.capslock.Lock()
 		for _, client := range s.OnlineMap {
 			client.C <- msg
 		}
-		s.maplock.Unlock()
+		s.capslock.Unlock()
 	}
 }
 
@@ -96,16 +96,16 @@ func (s *Server) Handler(conn net.Conn) {
 			close(user.C)
 
 			// 关闭连接
-			conn.Close()
+			_ = conn.Close()
 
 			// 退出当前Handler
-			return //runtime.Goexit()
+			return
 
 		}
 	}
 }
 
-//NewServer 创建一个Server
+// NewServer 创建一个Server
 func NewServer(ip string, port int) *Server {
 	server := &Server{
 		IP:        ip,
@@ -130,7 +130,7 @@ func (s *Server) Start() {
 	defer listener.Close()
 
 	// 启动监听Message的goroutine
-	go s.ListenMessager()
+	go s.ListenMessaged()
 
 	for {
 		// accept

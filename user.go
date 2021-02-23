@@ -38,9 +38,9 @@ func NewUser(conn net.Conn, server *Server) *User {
 func (u *User) Online() {
 
 	// 用户上线，将用户加入到OnlineMap中
-	u.server.maplock.Lock()
+	u.server.capslock.Lock()
 	u.server.OnlineMap[u.Name] = u
-	u.server.maplock.Unlock()
+	u.server.capslock.Unlock()
 
 	// 广播当前用户上线消息
 	u.server.BroadCast(u, "已上线")
@@ -50,9 +50,9 @@ func (u *User) Online() {
 func (u *User) Offline() {
 
 	// 用户下线，将用户从OnlineMap中删除
-	u.server.maplock.Lock()
+	u.server.capslock.Lock()
 	delete(u.server.OnlineMap, u.Name)
-	u.server.maplock.Unlock()
+	u.server.capslock.Unlock()
 
 	// 广播当前用户上线消息
 	u.server.BroadCast(u, "下线")
@@ -60,7 +60,7 @@ func (u *User) Offline() {
 
 // SendMsg 给当前User对应的客户端发送消息
 func (u *User) SendMsg(msg string) {
-	u.conn.Write([]byte(msg))
+	_, _ = u.conn.Write([]byte(msg))
 }
 
 // DoMessage 用户处理消息的业务
@@ -68,12 +68,12 @@ func (u *User) DoMessage(msg string) {
 	if msg == "who" {
 		// 查询当前在线用户都有哪些
 
-		u.server.maplock.Lock()
+		u.server.capslock.Lock()
 		for _, user := range u.server.OnlineMap {
 			onlineMap := "[" + user.Addr + "]" + user.Name + "在线\n"
 			u.SendMsg(onlineMap)
 		}
-		u.server.maplock.Unlock()
+		u.server.capslock.Unlock()
 
 	} else if len(msg) > 7 && msg[:7] == "rename|" {
 		// 消息格式 rename|xxx; rename是第0个元素，xxx是第1个元素
@@ -84,10 +84,10 @@ func (u *User) DoMessage(msg string) {
 		if ok {
 			u.SendMsg("该用户名已存在\n")
 		} else {
-			u.server.maplock.Lock()
+			u.server.capslock.Lock()
 			delete(u.server.OnlineMap, u.Name)
 			u.server.OnlineMap[newName] = u
-			u.server.maplock.Unlock()
+			u.server.capslock.Unlock()
 			u.Name = newName
 			u.SendMsg("已更新用户名：" + u.Name + "\n")
 		}
@@ -125,6 +125,6 @@ func (u *User) ListenMessage() {
 	for {
 		msg := <-u.C
 
-		u.conn.Write([]byte(msg + "\n"))
+		_, _ = u.conn.Write([]byte(msg + "\n"))
 	}
 }
